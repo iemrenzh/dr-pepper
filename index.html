@@ -91,7 +91,9 @@ a{color:inherit;text-decoration:none}ul{list-style:none}button{font-family:inher
 .b-block{width:100%}
 
 /* ===== views ===== */
-.view{display:none}.view.on{display:block}
+.view{display:block;scroll-margin-top:calc(178px + env(safe-area-inset-top,0px))}
+#view-coll,#view-pdp{border-top:1px solid var(--line)}
+#view-pdp{padding-top:2rem}
 .wrap{max-width:1400px;margin:0 auto;padding:0 2.5rem}
 
 /* ===== hero ===== */
@@ -428,11 +430,11 @@ footer{background:#000;color:#fff;padding:4rem 0 2rem;margin-top:0}
 <div class="chrome">
   <b>Dr Pepper Merch Store · concept mockup</b>
   <div class="ctabs" role="tablist">
-    <button class="ctab on" data-v="home" onclick="show('home')">Homepage</button>
-    <button class="ctab" data-v="coll" onclick="show('coll')">Collection page</button>
-    <button class="ctab" data-v="pdp" onclick="show('pdp')">Product page</button>
+    <button class="ctab on" data-v="home" onclick="show('home')">Home</button>
+    <button class="ctab" data-v="coll" onclick="show('coll')">Shop</button>
+    <button class="ctab" data-v="pdp" onclick="show('pdp')">Product</button>
   </div>
-  <button class="cnotes" id="notesBtn" onclick="toggleNotes()">Design notes</button>
+  <button class="cnotes" id="notesBtn" onclick="buildNotes(curView());toggleNotes()">Design notes</button>
 </div>
 
 <aside class="drawer" id="drawer" aria-label="Design notes">
@@ -492,8 +494,6 @@ footer{background:#000;color:#fff;padding:4rem 0 2rem;margin-top:0}
       </div>
     </div>
   </section>
-
-  <div class="ticker" aria-label="Current offers"><div class="ticker-t" id="tick"></div></div>
 
   <section class="sec"><div class="wrap">
     <div class="sec-tr">
@@ -555,7 +555,7 @@ footer{background:#000;color:#fff;padding:4rem 0 2rem;margin-top:0}
 </main>
 
 <!-- ================= COLLECTION ================= -->
-<main id="view-coll" class="view">
+<main id="view-coll" class="view on">
   <section class="cban">
     <div class="cban-in">
       <div>
@@ -592,7 +592,7 @@ footer{background:#000;color:#fff;padding:4rem 0 2rem;margin-top:0}
 </main>
 
 <!-- ================= PDP ================= -->
-<main id="view-pdp" class="view">
+<main id="view-pdp" class="view on">
   <div class="pdp" id="pdpRoot"></div>
 </main>
 
@@ -669,19 +669,17 @@ function add(id,size,q){var p=byId[id];cart.n+=q;cart.sub+=p.price*q;document.ge
 /* ---------- views ---------- */
 var VIEWS=['home','coll','pdp'];
 function show(v){
-  VIEWS.forEach(function(x){document.getElementById('view-'+x).classList.toggle('on',x===v)});
-  document.querySelectorAll('.ctab').forEach(function(t){t.classList.toggle('on',t.dataset.v===v)});
-  document.querySelectorAll('.nitem[data-nav]').forEach(function(n){n.classList.toggle('on',v==='home')});
-  document.getElementById('fcta').style.display=(v==='home'&&innerWidth>768)?'flex':'none';buildNotes(v);toggleNotes(false);window.scrollTo({top:0,behavior:'auto'});
+  var el=document.getElementById('view-'+v);
+  if(v==='home')window.scrollTo({top:0,behavior:'smooth'});else el.scrollIntoView({behavior:'smooth',block:'start'});
+  mark(v);buildNotes(v);toggleNotes(false);
 }
-function openColl(o){F={cat:o.cat||[],line:o.line||[],color:[],size:[],price:[],badge:o.badge||''};show('coll');buildFilters();renderGrid();}
-
+function mark(v){document.querySelectorAll('.ctab').forEach(function(t){t.classList.toggle('on',t.dataset.v===v)});document.querySelectorAll('.nitem[data-nav]').forEach(function(n){n.classList.toggle('on',v==='home')});}
+function curView(){var c='home';VIEWS.forEach(function(v){if(document.getElementById('view-'+v).getBoundingClientRect().top<=160)c=v});return c;}
+window.addEventListener('scroll',function(){mark(curView())},{passive:true});
+function openColl(o){F={cat:o.cat||[],line:o.line||[],color:[],size:[],price:[],badge:o.badge||''};buildFilters();renderGrid();show('coll');}
 /* ---------- home render ---------- */
 function home(){
   document.getElementById('heroImg').src=IMG.banner;
-  var items=['Free shipping on orders $75+','Holiday drop is live','Earn 2x Pepper Perks points this week','Ships in 24 hours','30-day returns','New arrivals just landed'];
-  var t='';for(var k=0;k<2;k++)items.forEach(function(x){t+='<span class="ti">'+x+'</span><span class="tdot">●</span>'});
-  document.getElementById('tick').innerHTML=t;
   var tiles=[['T-Shirts','tee','Tees',['T-Shirts']],['Hoodies','hood','Hoodies & jackets',['Hoodies & Jackets']],['Hats','hat','Hats',['Hats']],['Drinkware','tumb','Drinkware',['Drinkware']],['Bags','cool','Bags & coolers',['Bags & Coolers']],['Pins','pin','Stickers & pins',['Stickers & Pins']]];
   document.getElementById('catGrid').innerHTML=tiles.map(function(x){
     var p=byId[x[1]],n=P.filter(function(q){return x[3].indexOf(q.cat)>-1}).length;
@@ -737,7 +735,7 @@ function renderGrid(){
 /* ---------- PDP ---------- */
 var cur={id:'hood',ci:0,size:null,q:1,view:'front'};
 var stars='★★★★★';
-function openPDP(id,silent){cur={id:id,ci:0,size:null,q:1,view:'front'};if(!silent)show('pdp');renderPDP();if(!silent)window.scrollTo({top:0});}
+function openPDP(id,silent){cur={id:id,ci:0,size:null,q:1,view:'front'};renderPDP();if(!silent)show('pdp');}
 function pdpImg(p,view){
   var bg='linear-gradient(160deg,'+p.bg[0]+','+p.bg[1]+')',html=im(p.id);
   if(view==='detail')html=im(p.id,'style="transform:scale(2.2);transform-origin:'+p.focus+'"');
